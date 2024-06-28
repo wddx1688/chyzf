@@ -1,0 +1,60 @@
+version: '2.0'
+services:
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: cloudsigma.com/php
+    container_name: your_site_app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www/html/
+    volumes:
+      - ./app/:/var/www/html
+      - ./volumes/php/your_site.ini:/usr/local/etc/php/conf.d/your_site.ini
+    networks:
+      - app-network
+
+  webserver:
+    image: nginx:alpine
+    container_name: your_site_webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8780:80"
+      - "8443:443"
+    volumes:
+      - ./app/:/var/www/html/
+      - ./volumes/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - app-network
+
+  db:
+    image: mysql:5.7.32
+    container_name: your_site_db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: your_site
+      MYSQL_ROOT_PASSWORD: your_site_pass
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./volumes/mysql/data:/var/lib/mysql/
+      - ./volumes/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local
